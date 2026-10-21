@@ -18,4 +18,4 @@ async function verificarApi() {
   }
 }
 
-verificarApi();
+void verificarApi();
