@@ -8,6 +8,7 @@ Projeto Integrador Extensionista · ADS.
 
 - Git
 - Vite+ (comando vp): https://viteplus.dev
+- MariaDB
 
 ## Como rodar
 
@@ -17,7 +18,11 @@ Projeto Integrador Extensionista · ADS.
    cd conectadoa
 
 2. Instale as dependências: vp install
-3. Copie .env.example para .env
-4. Terminal 1, inicie a API: vp run api
-5. Terminal 2, inicie o frontend: vp dev
-6. Abra http://localhost:5173
+3. Copie .env.example para .env e preencha as credenciais do banco
+4. Crie o banco e as tabelas (pode ser executado quantas vezes quiser, ele recria tudo):
+
+   mariadb -u root -p -e "source database/schema.sql"
+
+5. Terminal 1, inicie a API: vp run api
+6. Terminal 2, inicie o frontend: vp dev
+7. Abra http://localhost:5173
