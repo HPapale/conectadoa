@@ -1,0 +1,168 @@
+openapi: 3.0.3
+info:
+  title: ConectaDoa API
+  description: API do MVP de gestão de doações (PIE II)
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Desenvolvimento local
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Verifica a API e o banco
+      security: []
+      responses:
+        "200": { description: API no ar }
+  /auth/login:
+    post:
+      summary: Confere e-mail e senha e devolve um token JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Login" }
+      responses:
+        "200":
+          description: Login aceito
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Token" }
+        "400": { description: E-mail ou senha não informados }
+        "401": { description: E-mail ou senha inválidos }
+  /doadores:
+    get:
+      summary: Lista doadores
+      responses:
+        "200":
+          description: Lista de doadores
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Doador" }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+    post:
+      summary: Cadastra doador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DoadorInput" }
+      responses:
+        "201": { description: Doador criado }
+        "400": { description: Dados inválidos }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+        "409": { description: E-mail já cadastrado }
+  /doadores/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      summary: Busca um doador
+      responses:
+        "200": { description: Doador encontrado }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+        "404": { description: Doador não encontrado }
+    put:
+      summary: Edita um doador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DoadorInput" }
+      responses:
+        "200": { description: Doador atualizado }
+        "400": { description: Dados inválidos }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+        "404": { description: Doador não encontrado }
+        "409": { description: E-mail já cadastrado }
+    delete:
+      summary: Exclui um doador
+      responses:
+        "204": { description: Doador excluído }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+        "404": { description: Doador não encontrado }
+        "409": { description: Doador possui doações }
+  /itens:
+    get:
+      summary: Catálogo de itens
+      responses:
+        "200": { description: Lista de itens com categoria }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+  /doacoes:
+    get:
+      summary: Lista doações com doador e itens
+      responses:
+        "200": { description: Lista de doações }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+    post:
+      summary: Registra doação com um ou mais itens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DoacaoInput" }
+      responses:
+        "201": { description: Doação registrada }
+        "400": { description: "Dados inválidos, doador ou item inexistente" }
+        "401": { $ref: "#/components/responses/NaoAutorizado" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    NaoAutorizado:
+      description: Token ausente, inválido ou expirado
+  schemas:
+    Login:
+      type: object
+      required: [email, senha]
+      properties:
+        email: { type: string, format: email }
+        senha: { type: string, format: password }
+    Token:
+      type: object
+      properties:
+        token: { type: string }
+        usuario:
+          type: object
+          properties:
+            nome: { type: string }
+            email: { type: string }
+    Doador:
+      type: object
+      properties:
+        id_doador: { type: integer, readOnly: true }
+        nome: { type: string, maxLength: 150 }
+        email: { type: string, format: email }
+        telefone: { type: string, nullable: true }
+    DoadorInput:
+      type: object
+      required: [nome, email]
+      properties:
+        nome: { type: string, maxLength: 150 }
+        email: { type: string, format: email, maxLength: 100 }
+        telefone: { type: string, nullable: true }
+    DoacaoInput:
+      type: object
+      required: [id_doador, data_doacao, itens]
+      properties:
+        id_doador: { type: integer }
+        data_doacao: { type: string, format: date }
+        descricao: { type: string, maxLength: 255, nullable: true }
+        itens:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [id_item, quantidade]
+            properties:
+              id_item: { type: integer }
+              quantidade: { type: integer, minimum: 1 }
