@@ -1,27 +1,43 @@
 import "dotenv/config";
 import express from "express";
-import { pool } from "./db.js";
-import doadores from "./doadores.js";
+import db from "./db.js";
+import auth, { autenticar } from "./auth.js";
+import doadores from "./routes/doadores.js";
+import itens from "./routes/itens.js";
+import doacoes from "./routes/doacoes.js";
+
+if (!process.env.JWT_SECRET) {
+  console.error("Defina JWT_SECRET no arquivo .env");
+  process.exit(1);
+}
 
 const app = express();
 app.use(express.json());
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", app: "ConectaDoa", hora: new Date().toISOString() });
-});
-
-app.use("/api/doadores", doadores);
-
-app.get("/api/db-health", async (req, res) => {
+// Rotas públicas
+app.get("/api/health", async (req, res) => {
   try {
-    const [linhas] = await pool.query(
-      "SELECT COUNT(*) AS tabelas FROM information_schema.tables WHERE table_schema = ?",
-      [process.env.DB_NAME],
-    );
-    res.json({ status: "ok", banco: process.env.DB_NAME, tabelas: linhas[0].tabelas });
-  } catch (erro) {
-    res.status(500).json({ status: "erro", mensagem: "Falha ao conectar no banco" });
+    await db.execute("SELECT 1");
+    res.json({ status: "ok", banco: "ok" });
+  } catch {
+    res.status(500).json({ status: "ok", banco: "erro" });
   }
+});
+app.use("/api/auth", auth);
+
+// Daqui para baixo, toda rota exige token
+app.use("/api", autenticar);
+app.use("/api/doadores", doadores);
+app.use("/api/itens", itens);
+app.use("/api/doacoes", doacoes);
+
+// Tratador de erros: qualquer erro não tratado vira 500
+app.use((err, req, res, _next) => {
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({ erro: "JSON inválido no corpo da requisição" });
+  }
+  console.error(err);
+  res.status(500).json({ erro: "Erro interno do servidor" });
 });
 
 const PORT = process.env.PORT || 3000;
