@@ -30,3 +30,6 @@ dist-ssr
 
 # Visual Studio
 .vs/
+
+# backup do banco (contém dados pessoais)
+backup*.sql
